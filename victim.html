@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Victim Page</title>
+</head>
+
+<body>
+
+<h2>Victim Page</h2>
+
+<label>Secret Slot (0-63)</label>
+<input id="secret" type="number" value="23" min="0" max="63">
+
+<br><br>
+
+<button onclick="start()">Start Victim</button>
+
+<script>
+
+const STRIDE = 4096;
+const SLOTS = 64;
+
+const sab = new SharedArrayBuffer(STRIDE * SLOTS);
+const mem = new Uint8Array(sab);
+
+let spyWindow = null;
+
+function start(){
+
+  const secret = Number(document.getElementById("secret").value);
+
+  spyWindow = window.open("attacker-spy.html");
+
+  setTimeout(()=>{
+
+    spyWindow.postMessage({
+      type:"sab",
+      sab,
+      stride:STRIDE,
+      slots:SLOTS
+    },"*");
+
+  },500);
+
+  runVictim(secret);
+}
+
+function runVictim(secret){
+
+  const base = secret * STRIDE;
+
+  setInterval(()=>{
+
+    for(let r = 0; r < 20000; r++){
+
+      mem[base] ^= 1;
+      mem[base+64] ^= 1;
+      mem[base+128] ^= 1;
+      mem[base+192] ^= 1;
+      mem[base+256] ^= 1;
+      mem[base+320] ^= 1;
+      mem[base+384] ^= 1;
+      mem[base+448] ^= 1;
+
+    }
+
+  },1);
+}
+
+</script>
+
+</body>
+</html>

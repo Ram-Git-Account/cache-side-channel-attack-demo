@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Spy Page</title>
+</head>
+
+<body>
+
+<h2>Spy Page</h2>
+<pre id="log"></pre>
+
+<script>
+
+let mem;
+let STRIDE;
+let SLOTS;
+
+let votes;
+let index = 0;
+
+function log(msg){
+  document.getElementById("log").textContent += msg + "\n";
+}
+
+window.addEventListener("message",(e)=>{
+
+  if(e.data.type === "sab"){
+
+    mem = new Uint8Array(e.data.sab);
+    STRIDE = e.data.stride;
+    SLOTS = e.data.slots;
+
+    votes = new Array(SLOTS).fill(0);
+
+    log("Received SAB");
+
+    startSpy();
+  }
+
+});
+
+function probe(i){
+
+  const base = i * STRIDE;
+
+  const t0 = performance.now();
+
+  let x = 0;
+
+  for(let r=0;r<1500;r++){
+
+    x += mem[base];
+    x += mem[base+64];
+    x += mem[base+128];
+    x += mem[base+192];
+
+  }
+
+  return performance.now() - t0;
+}
+
+function startSpy(){
+
+  setInterval(()=>{
+
+    const slot = (index * 167 + 13) & (SLOTS - 1);
+
+    const lat = probe(slot);
+
+    votes[slot] += lat;
+
+    index++;
+
+    if(index % 2000 === 0){
+
+      let best = 0;
+      let max = 0;
+
+      for(let i=0;i<SLOTS;i++){
+
+        if(votes[i] > max){
+          max = votes[i];
+          best = i;
+        }
+
+      }
+
+      log("Most likely slot: " + best);
+
+      votes.fill(0);
+    }
+
+  },5);
+}
+
+</script>
+
+</body>
+</html>
